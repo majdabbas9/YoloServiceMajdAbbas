@@ -9,5 +9,3 @@ pillow>=9.5.0
 ultralytics>=8.0.0
 python-multipart>=0.0.6
 
-# PyTorch for deep learning
-torch>=2.0.0
