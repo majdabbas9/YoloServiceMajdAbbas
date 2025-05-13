@@ -1,0 +1,11 @@
+[Unit]
+Description=Simple Python Server
+After=network.target
+
+[Service]
+WorkingDirectory=/home/ubuntu/YoloServiceMajdAbbas
+ExecStart=/home/ubuntu/YoloServiceMajdAbbas/.venv/bin/python /home/ubuntu/YoloServiceMajdAbbas/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
