@@ -83,9 +83,10 @@ def predict(s3_key:str):
 
     # ext = os.path.splitext(file.filename)[1]
     uid = str(uuid.uuid4())
-    original_path = os.path.join(UPLOAD_DIR, uid + '-' +s3_key.split('/')[-1])
+    ext = '.'+s3_key.split('.')[-1]
+    original_path = os.path.join(UPLOAD_DIR, uid + ext)
     download_file('majd-polybot-images-bucket',s3_key,original_path)
-    predicted_path = os.path.join(PREDICTED_DIR, uid + '-' +s3_key.split('/')[-1])
+    predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
     results = model(original_path, device="cpu")
     annotated_frame = results[0].plot()  # NumPy image with boxes
     annotated_image = Image.fromarray(annotated_frame)
