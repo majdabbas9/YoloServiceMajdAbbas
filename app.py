@@ -6,7 +6,7 @@ import sqlite3
 import os
 import uuid
 import shutil
-
+from S3_requests import upload_file,download_file
 # Disable GPU usage
 import torch
 torch.cuda.is_available = lambda: False
@@ -76,26 +76,22 @@ def save_detection_object(prediction_uid, label, score, box):
         """, (prediction_uid, label, score, str(box)))
 
 @app.post("/predict")
-def predict(file: UploadFile = File(...)):
+def predict(s3_key:str):
     """
     Predict objects in an image
     """
-    ext = os.path.splitext(file.filename)[1]
+
+    # ext = os.path.splitext(file.filename)[1]
     uid = str(uuid.uuid4())
-    original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
-
-    with open(original_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
+    original_path = os.path.join(UPLOAD_DIR, uid + '-' +s3_key.split('/')[-1])
+    download_file('majd-polybot-images-bucket',s3_key,original_path)
+    predicted_path = os.path.join(PREDICTED_DIR, uid + '-' +s3_key.split('/')[-1])
     results = model(original_path, device="cpu")
-
     annotated_frame = results[0].plot()  # NumPy image with boxes
     annotated_image = Image.fromarray(annotated_frame)
     annotated_image.save(predicted_path)
 
     save_prediction_session(uid, original_path, predicted_path)
-    
     detected_labels = []
     for box in results[0].boxes:
         label_idx = int(box.cls[0].item())
@@ -104,9 +100,9 @@ def predict(file: UploadFile = File(...)):
         bbox = box.xyxy[0].tolist()
         save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
-
+    upload_file(predicted_path,'majd-polybot-images-bucket', f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
     return {
-        "prediction_uid": uid, 
+        "prediction_uid": uid,
         "detection_count": len(results[0].boxes),
         "labels": detected_labels
     }
