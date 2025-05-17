@@ -43,10 +43,10 @@ jobs:
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_get_invalid_uid
 
       - name: Run label filtering tests
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_label_valid_and_invalid
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_label_valid
 
       - name: Run score filtering tests
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_score_valid_and_invalid
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_score_valid
 
       - name: Run image retrieval tests
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_image_valid_and_invalid

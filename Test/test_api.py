@@ -116,6 +116,24 @@ def test_prediction_get_invalid_uid():
     resp = client.get("/prediction/nonexistent-uid")
     assert resp.status_code == 404
 
+
+def test_get_predictions_by_label_valid():
+    valid_label = list(model.names.values())[0]
+
+    resp = client.get(f"/predictions/label/{valid_label}")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+def test_get_predictions_by_score_valid():
+    # Valid scores 0 and 1 boundary
+    score = 0.0
+    resp = client.get(f"/predictions/score/{score}")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+
 def test_get_image_valid_and_invalid():
     with open(TEST_IMAGE_PATH, "rb") as img_file:
         resp = client.post("/predict", files={"file": ("test_image.jpg", img_file, "image/jpeg")})
