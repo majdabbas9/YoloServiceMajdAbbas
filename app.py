@@ -157,7 +157,6 @@ def get_predictions_by_label(label: str):
             JOIN detection_objects do ON ps.uid = do.prediction_uid
             WHERE do.label = ?
         """, (label,)).fetchall()
-        
         return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
 
 @app.get("/predictions/score/{min_score}")
@@ -173,7 +172,6 @@ def get_predictions_by_score(min_score: float):
             JOIN detection_objects do ON ps.uid = do.prediction_uid
             WHERE do.score >= ?
         """, (min_score,)).fetchall()
-        
         return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
 
 @app.get("/image/{type}/{filename}")
