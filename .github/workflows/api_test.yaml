@@ -1,0 +1,52 @@
+name: Project auto-testing
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r torch-requirements.txt
+          pip install -r requirements.txt
+          pip install pytest
+          pip install httpx
+
+      - name: Run health check test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_health
+
+      - name: Run missing file test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_missing_file
+
+      - name: Run invalid file type test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_invalid_file_type
+
+      - name: Run full prediction and DB test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_valid_image_and_db_and_getters
+
+      - name: Run prediction invalid UID test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_get_invalid_uid
+
+      - name: Run label filtering tests
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_label_valid_and_invalid
+
+      - name: Run score filtering tests
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_score_valid_and_invalid
+
+      - name: Run image retrieval tests
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_image_valid_and_invalid
