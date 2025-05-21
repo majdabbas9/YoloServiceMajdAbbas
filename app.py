@@ -10,7 +10,6 @@ from S3_requests import upload_file,download_file
 # Disable GPU usage
 import torch
 torch.cuda.is_available = lambda: False
-
 app = FastAPI()
 
 UPLOAD_DIR = "uploads/original"
