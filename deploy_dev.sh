@@ -12,6 +12,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart yolo_dev.service
 sudo systemctl enable yolo_dev.service
 sudo systemctl start yolo_dev.service
+
 if ! systemctl is-active --quiet yolo_dev.service; then
   echo "❌ yolo.service is not running."
   sudo systemctl status yolo_dev.service --no-pager
