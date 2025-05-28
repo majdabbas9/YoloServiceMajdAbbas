@@ -55,4 +55,4 @@ jobs:
 
       - name: Execute script on EC2
         run: |
-          ssh ec2 "cd $REPO_NAME && bash deploy.sh ~/${REPO_NAME}"
+          ssh ec2 "cd $REPO_NAME && bash deploy.sh ~/${REPO_NAME} ${{ secrets.S3_BUCKET }}"
