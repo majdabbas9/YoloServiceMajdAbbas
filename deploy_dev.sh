@@ -19,7 +19,7 @@ if ! systemctl is-active --quiet yolo_dev.service; then
   exit 1
 fi
 
-echo "S3_BUCKET_NAME=$s3_bucket_name_dev" >> $path_to_file/.env
+echo "S3_BUCKET_NAME=$s3_bucket_name_dev" > $path_to_file/.env
 # Check if the virtual environment exists
 if [ ! -d "$path_to_file/.venv" ]; then  # Check if .venv is a directory
     python3 -m venv "$path_to_file/.venv"

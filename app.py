@@ -9,9 +9,11 @@ import shutil
 from S3_requests import upload_file,download_file
 # Disable GPU usage
 import torch
+from dotenv import load_dotenv
 torch.cuda.is_available = lambda: False
 app = FastAPI()
-
+load_dotenv()
+S3_bucket_name = os.getenv('S3_BUCKET_NAME')
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
 DB_PATH = "predictions.db"
@@ -84,7 +86,7 @@ def predict(s3_key:str):
     uid = str(uuid.uuid4())
     ext = '.'+s3_key.split('.')[-1]
     original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    download_file('majd-polybot-images-bucket',s3_key,original_path)
+    download_file(S3_bucket_name,s3_key,original_path)
     predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
     results = model(original_path, device="cpu")
     annotated_frame = results[0].plot()  # NumPy image with boxes
@@ -100,7 +102,7 @@ def predict(s3_key:str):
         bbox = box.xyxy[0].tolist()
         save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
-    upload_file(predicted_path,'majd-polybot-images-bucket', f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
+    upload_file(predicted_path,S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
     return {
         "prediction_uid": uid,
         "detection_count": len(results[0].boxes),
