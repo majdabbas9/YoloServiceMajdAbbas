@@ -51,7 +51,7 @@ jobs:
 
         run: |
           # Clone repository if it doesn't exist, otherwise pull latest changes
-          ssh ec2 "if [ -d ~/${REPO_NAME} ]; then cd ~/${REPO_NAME} && git pull; else git clone ${REPO_URL} ~/${REPO_NAME}; fi"
+          ssh ec2 "if [ -d ~/${REPO_NAME} ]; then cd ~/${REPO_NAME} && git checkout div && git pull; else git clone ${REPO_URL} ~/${REPO_NAME}; fi"
 
       - name: Execute script on EC2
         run: |
