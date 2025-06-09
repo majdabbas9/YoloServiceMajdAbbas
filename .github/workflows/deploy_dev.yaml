@@ -71,6 +71,5 @@ jobs:
           """ > .env
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
           
-          ssh ec2 "sudo docker compose -f docker-compose.div.yaml down \
-              sudo docker compose -f docker-compose.div.yaml up -d"
+          ssh ec2 "sudo docker compose -f docker-compose.div.yaml down && sudo docker compose -f docker-compose.div.yaml up -d"
 
