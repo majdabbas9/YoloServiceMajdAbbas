@@ -68,7 +68,6 @@ jobs:
           IMG_NAME="majdabbas99${{ inputs.image }}"
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET_DEV }}
           """ > .env
-
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
           ssh ec2 "sudo docker compose -f docker-compose.dev.yaml up -d"
 
