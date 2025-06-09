@@ -20,4 +20,4 @@ RUN pip install --upgrade pip && pip install -r /app/torch-requirements.txt
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
 EXPOSE 8080
 # Default command to run the bot
-CMD ["python3","app"]
+CMD ["python","app.py"]
