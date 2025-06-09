@@ -1,5 +1,5 @@
 services:
-  polybot:
+  yolo_div:
     image: "${IMG_NAME}"
     restart: unless-stopped
     env_file:
