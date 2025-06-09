@@ -1,3 +1,4 @@
+sudo dpkg --configure -a
 echo "📦 Checking and installing Docker if not present..."
 
 if ! command -v docker &> /dev/null; then
