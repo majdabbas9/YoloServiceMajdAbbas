@@ -22,4 +22,5 @@ fi
 # 🔁 Re-check that Docker was installed correctly
 if ! command -v docker &> /dev/null; then
   echo "❌ Docker installation failed or not found. Exiting."
+  echo "Please check your internet connection and try again."
 fi
