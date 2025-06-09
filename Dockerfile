@@ -4,6 +4,7 @@ FROM python:3.11-slim AS base
 # Set work directory
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y libgl1
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -14,10 +15,15 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy source code
 COPY . .
 
+# Install Python dependencies
 RUN pip install --upgrade pip && pip install -r /app/torch-requirements.txt
 RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+# Expose the service port
 EXPOSE 8080
+
 # Default command to run the bot
-CMD ["python","app.py"]
+CMD ["python", "app.py"]
