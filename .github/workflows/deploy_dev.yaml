@@ -52,15 +52,12 @@ jobs:
           EOF
       - name: Copy deploy script to EC2
         run: |
-          git checkout dev
           scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
           scp docker-compose-files/docker-compose.div.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
-          
-          scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
+          # scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
 
       - name: Copy script to EC2
         run: |
-          git checkout dev
           EC2_USERNAME=${{ secrets.EC2_USERNAME }}
           ssh ec2 "chmod +x /home/$EC2_USERNAME/download_docker.sh && bash /home/$EC2_USERNAME/download_docker.sh"
 
