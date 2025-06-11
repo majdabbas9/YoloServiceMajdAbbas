@@ -1,10 +1,10 @@
 # The name of the workflow
-name: yolo Build Dev
+name: yolo Build prod
 
 on:
   push:
     branches:
-     - dev
+     - main
   workflow_dispatch:
 
 jobs:
@@ -20,14 +20,14 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         run :
-          echo "Building Docker image for dev branch"
+          echo "Building Docker image for prod branch"
 
       - id: step1
         run: |
           docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
           
-          img_name="majdabbas99/yolo_build_dev:${{github.run_number}}"
-          img_name1="/yolo_build_dev:${{github.run_number}}"
+          img_name="majdabbas99/yolo_build_prod:${{github.run_number}}"
+          img_name1="/yolo_build_prod:${{github.run_number}}"
           # same docker_image to pass it to the next workflow 
           echo "image=$img_name1" >> "$GITHUB_OUTPUT"
           echo "Building Docker image: $img_name1"
@@ -41,6 +41,6 @@ jobs:
       image: ${{needs.Build.outputs.output1}}
     secrets:
       EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-      EC2_HOST: ${{ secrets.EC2_HOST_DEV }}
+      EC2_HOST: ${{ secrets.EC2_HOST }}
       EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-      S3_BUCKET: ${{ secrets.S3_BUCKET_DEV }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}

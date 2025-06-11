@@ -1,5 +1,5 @@
 # The name of the workflow
-name: yolo Deploy dev
+name: yolo Deploy
 
 on:
   workflow_call:
@@ -11,11 +11,11 @@ on:
     secrets:
       EC2_SSH_KEY:
         required: true
-      EC2_HOST_DEV:
+      EC2_HOST:
         required: true
       EC2_USERNAME:
         required: true
-      S3_BUCKET_DEV:
+      S3_BUCKET:
         required: true
   workflow_dispatch:
     inputs:
@@ -37,7 +37,7 @@ jobs:
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
-          EC2_HOST: ${{ secrets.EC2_HOST_DEV }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
         run: |
           mkdir -p ~/.ssh
@@ -52,14 +52,12 @@ jobs:
           EOF
       - name: Copy deploy script to EC2
         run: |
-          # git checkout dev
           scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
-          scp docker-compose-files/docker-compose.div.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
+          scp docker-compose-files/docker-compose.yolo.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
           scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
 
       - name: Copy script to EC2
         run: |
-          git checkout dev
           EC2_USERNAME=${{ secrets.EC2_USERNAME }}
           ssh ec2 "chmod +x /home/$EC2_USERNAME/download_docker.sh && bash /home/$EC2_USERNAME/download_docker.sh"
 
@@ -67,8 +65,8 @@ jobs:
         run: |
           echo """
           IMG_NAME="majdabbas99${{ inputs.image }}"
-          S3_BUCKET_NAME=${{ secrets.S3_BUCKET_DEV }}
+          S3_BUCKET_NAME=${{ secrets.S3_BUCKET }}
           """ > .env
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
-          ssh ec2 "sudo docker compose -f docker-compose.div.yaml down && sudo docker compose -f docker-compose.div.yaml up -d"
+          ssh ec2 "sudo docker compose -f docker-compose.yolo.yaml down && sudo docker compose -f docker-compose.yolo.yaml up -d"
 
