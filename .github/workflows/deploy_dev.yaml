@@ -54,8 +54,8 @@ jobs:
         run: |
           # git checkout dev
           scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
-          ls -la
           scp docker-compose-files/docker-compose.div.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
+          scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
 
       - name: Copy script to EC2
         run: |
@@ -70,6 +70,5 @@ jobs:
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET_DEV }}
           """ > .env
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
-          
           ssh ec2 "sudo docker compose -f docker-compose.div.yaml down && sudo docker compose -f docker-compose.div.yaml up -d"
 
