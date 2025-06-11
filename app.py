@@ -12,7 +12,6 @@ import torch
 from dotenv import load_dotenv
 torch.cuda.is_available = lambda: False
 app = FastAPI()
-load_dotenv()
 S3_bucket_name = os.getenv('S3_BUCKET_NAME')
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"

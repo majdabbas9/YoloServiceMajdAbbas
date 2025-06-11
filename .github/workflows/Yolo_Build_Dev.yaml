@@ -1,0 +1,46 @@
+# The name of the workflow
+name: yolo Build Dev
+
+on:
+  push:
+    branches:
+     - dev
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      output1: ${{ steps.step1.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+        run :
+          echo "Building Docker image for dev branch"
+
+      - id: step1
+        run: |
+          docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
+          
+          img_name="majdabbas99/yolo_build_dev:${{github.run_number}}"
+          img_name1="/yolo_build_dev:${{github.run_number}}"
+          # same docker_image to pass it to the next workflow 
+          echo "image=$img_name1" >> "$GITHUB_OUTPUT"
+          echo "Building Docker image: $img_name1"
+          # build & push the image 
+          docker build --push -t $img_name  .
+
+  Deploy:
+    needs: Build
+    uses: ./.github/workflows/deploy_yolo.yaml
+    with:
+      image: ${{needs.Build.outputs.output1}}
+    secrets:
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      EC2_HOST: ${{ secrets.EC2_HOST_DEV }}
+      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET_DEV }}
