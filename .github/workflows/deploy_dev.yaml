@@ -52,7 +52,7 @@ jobs:
           EOF
       - name: Copy deploy script to EC2
         run: |
-          git checkout dev
+          # git checkout dev
           scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
           ls -la
           scp docker-compose-files/docker-compose.div.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
