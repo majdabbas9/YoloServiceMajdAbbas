@@ -6,3 +6,11 @@ services:
       - .env
     ports:
       - "8080:8080"
+  otelcol:
+    image: otel/opentelemetry-collector:latest
+    restart: unless-stopped
+    command: [ "--config=/etc/otelcol/config.yaml" ]
+    ports:
+      - "8889:8889"
+    volumes:
+      - ./otelcol-config.yaml:/etc/otelcol/config.yaml:ro
