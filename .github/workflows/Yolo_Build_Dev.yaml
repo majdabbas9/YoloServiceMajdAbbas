@@ -32,7 +32,7 @@ jobs:
           echo "image=$img_name1" >> "$GITHUB_OUTPUT"
           echo "Building Docker image: $img_name1"
           # build & push the image 
-          # docker build --push -t $img_name  .
+          docker build --push -t $img_name  .
 
   Deploy:
     needs: Build
