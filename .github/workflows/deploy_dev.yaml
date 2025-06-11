@@ -54,7 +54,7 @@ jobs:
         run: |
           scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
           scp docker-compose-files/docker-compose.div.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
-          scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
+          # scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
 
       - name: Copy script to EC2
         run: |
