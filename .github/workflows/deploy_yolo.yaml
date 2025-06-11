@@ -67,6 +67,7 @@ jobs:
           IMG_NAME="majdabbas99${{ inputs.image }}"
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET }}
           """ > .env
+          
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
           ssh ec2 "sudo docker compose -f docker-compose.yolo.yaml down && sudo docker compose -f docker-compose.yolo.yaml up -d"
 
