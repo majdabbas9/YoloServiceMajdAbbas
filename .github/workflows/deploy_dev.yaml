@@ -53,7 +53,7 @@ jobs:
       - name: Copy deploy script to EC2
         run: |
           git checkout dev
-          scp deploy_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
+          scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
           ls -la
           scp docker-compose-files/docker-compose.div.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
 
@@ -61,7 +61,7 @@ jobs:
         run: |
           git checkout dev
           EC2_USERNAME=${{ secrets.EC2_USERNAME }}
-          ssh ec2 "chmod +x /home/$EC2_USERNAME/deploy_docker.sh && bash /home/$EC2_USERNAME/deploy_docker.sh"
+          ssh ec2 "chmod +x /home/$EC2_USERNAME/download_docker.sh && bash /home/$EC2_USERNAME/download_docker.sh"
 
       - name: Execute script on EC2
         run: |
