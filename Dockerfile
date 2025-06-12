@@ -15,8 +15,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy source code
-Copy torch-requirements.txt .
-Copy requirements.txt .
+COPY torch-requirements.txt .
+COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install --no-cache-dir -r torch-requirements.txt.txt
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
