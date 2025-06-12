@@ -14,14 +14,15 @@ RUN apt-get update && apt-get install -y \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy source code
-COPY torch-requirements.txt .
-COPY requirements.txt .
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir -r torch-requirements.txt.txt
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+COPY torch-requirements.txt /app/torch-requirements.txt
+COPY requirements.txt /app/requirements.txt
 
-COPY  . .
+# Install Python dependencies
+RUN pip install --upgrade pip && pip install -r /app/torch-requirements.txt
+RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+
+# Copy source code
+COPY . .
 
 # Default command to run the bot
 CMD ["python", "app.py"]
