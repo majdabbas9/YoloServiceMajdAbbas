@@ -14,9 +14,9 @@ services:
       - "8889:8889"
     volumes:
       - ./otelcol-config.yaml:/etc/otelcol/config.yaml:ro
-      - /proc:/hostfs/proc:ro
-      - /sys:/hostfs/sys:ro
+      - /:/hostfs:ro
     environment:
-      - HOST_PROC=/hostfs/proc
-      - HOST_SYS=/hostfs/sys
+        - HOST_PROC=/hostfs/proc
+        - HOST_SYS=/hostfs/sys
+        - HOST_MOUNT_PREFIX=/hostfs
     network_mode: host
