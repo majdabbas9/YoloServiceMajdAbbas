@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
 Copy torch-requirements.txt .
 Copy requirements.txt .
 # Install Python dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir -r torch-requirements.txt.txt && \
-    pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r torch-requirements.txt.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 COPY  . .
 
