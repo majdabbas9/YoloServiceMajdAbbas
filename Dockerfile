@@ -18,8 +18,8 @@ COPY torch-requirements.txt /app/torch-requirements.txt
 COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies
-RUN pip install --upgrade pip && pip install -r /app/torch-requirements.txt
-RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r /app/torch-requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy source code
 COPY . .
