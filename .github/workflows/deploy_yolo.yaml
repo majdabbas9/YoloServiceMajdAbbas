@@ -55,6 +55,7 @@ jobs:
           scp download_docker.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
           scp docker-compose-files/docker-compose.yolo.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
           scp docker-compose-files/otelcol-config.yaml ec2:/home/${{ secrets.EC2_USERNAME }}/
+          scp containerize.sh ec2:/home/${{ secrets.EC2_USERNAME }}/
 
       - name: Copy script to EC2
         run: |
@@ -69,5 +70,5 @@ jobs:
           """ > .env
           
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
-          ssh ec2 "sudo docker compose -f docker-compose.yolo.yaml down && sudo docker compose -f docker-compose.yolo.yaml up -d"
+          ssh ec2 "cd ~ && bash containerize.sh majdabbas99${{ inputs.image }}"
 
