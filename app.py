@@ -13,67 +13,26 @@ from dotenv import load_dotenv
 torch.cuda.is_available = lambda: False
 app = FastAPI()
 S3_bucket_name = os.getenv('S3_BUCKET_NAME')
+storage_type = os.getenv("STORAGE_TYPE", "sqlite")
 UPLOAD_DIR = "uploads/original"
 PREDICTED_DIR = "uploads/predicted"
 DB_PATH = "predictions.db"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
-
+from db_for_prediction import DatabaseFactory
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")  
 
-# Initialize SQLite
-def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        # Create the predictions main table to store the prediction session
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS prediction_sessions (
-                uid TEXT PRIMARY KEY,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                original_image TEXT,
-                predicted_image TEXT
-            )
-        """)
-        
-        # Create the objects table to store individual detected objects in a given image
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS detection_objects (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                prediction_uid TEXT,
-                label TEXT,
-                score REAL,
-                box TEXT,
-                FOREIGN KEY (prediction_uid) REFERENCES prediction_sessions (uid)
-            )
-        """)
-        
-        # Create index for faster queries
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_prediction_uid ON detection_objects (prediction_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_label ON detection_objects (label)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_score ON detection_objects (score)")
-
-init_db()
-
-def save_prediction_session(uid, original_image, predicted_image):
-    """
-    Save prediction session to database
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO prediction_sessions (uid, original_image, predicted_image)
-            VALUES (?, ?, ?)
-        """, (uid, original_image, predicted_image))
-
-def save_detection_object(prediction_uid, label, score, box):
-    """
-    Save detection object to database
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO detection_objects (prediction_uid, label, score, box)
-            VALUES (?, ?, ?, ?)
-        """, (prediction_uid, label, score, str(box)))
+# Initialize database
+if storage_type == "sqlite":
+    # make sure DB_PATH is defined or imported from your config
+    db = DatabaseFactory.create_database("sqlite", db_path=DB_PATH)
+elif storage_type == "dynamodb":
+    # you can optionally pass a custom prefix for your Dynamo tables
+    db = DatabaseFactory.create_database("dynamodb", table_prefix="myapp")
+else:
+    raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
 
 @app.post("/predict")
 def predict(s3_key:str):
@@ -92,14 +51,14 @@ def predict(s3_key:str):
     annotated_image = Image.fromarray(annotated_frame)
     annotated_image.save(predicted_path)
 
-    save_prediction_session(uid, original_path, predicted_path)
+    db.save_prediction_session(uid, original_path, predicted_path)
     detected_labels = []
     for box in results[0].boxes:
         label_idx = int(box.cls[0].item())
         label = model.names[label_idx]
         score = float(box.conf[0])
         bbox = box.xyxy[0].tolist()
-        save_detection_object(uid, label, score, bbox)
+        db.save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
     upload_file(predicted_path,S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
     return {
