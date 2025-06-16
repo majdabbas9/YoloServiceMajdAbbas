@@ -30,7 +30,7 @@ if storage_type == "sqlite":
     db = DatabaseFactory.create_database("sqlite", db_path=DB_PATH)
 elif storage_type == "dynamodb":
     # you can optionally pass a custom prefix for your Dynamo tables
-    db = DatabaseFactory.create_database("dynamodb", table_prefix="myapp")
+    db = DatabaseFactory.create_database("dynamodb")
 else:
     raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
 
