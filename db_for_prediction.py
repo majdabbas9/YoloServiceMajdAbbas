@@ -66,15 +66,16 @@ class SQLiteDatabaseHandler(BaseDatabaseHandler):
 
 # === DynamoDB Implementation ===
 class DynamoDBDatabaseHandler(BaseDatabaseHandler):
-    def __init__(self, table_prefix='majd_yolo'):
-        self.dynamodb = boto3.resource('dynamodb',region_name='eu-west-1')
-        self.prefix = table_prefix
+    def __init__(self, env='dev', project_prefix='majd_yolo'):
+        self.dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+        # Compose full prefix using environment + project prefix
+        self.prefix = f"{env}_{project_prefix}"  # e.g. "dev_majd_yolo" or "prod_majd_yolo"
+
         self.prediction_sessions_table = self.dynamodb.Table(f"{self.prefix}_prediction_sessions")
         self.detection_objects_table = self.dynamodb.Table(f"{self.prefix}_detection_objects")
-        # self.init_db()  # <-- No need to call this anymore if tables already exist
 
     def init_db(self):
-        # Optional: Just validate the tables exist
+        # Optional: Validate tables exist
         try:
             self.prediction_sessions_table.load()
             self.detection_objects_table.load()
@@ -91,10 +92,9 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
 
     def save_detection_object(self, prediction_uid, label, score, box):
         self.detection_objects_table.put_item(Item={
-            'id': f"{prediction_uid}_{label}_{datetime.utcnow().timestamp()}",
             'prediction_uid': prediction_uid,
             'label': label,
-            'score': float(score),
+            'score': score,
             'box': str(box)
         })
 
@@ -106,6 +106,8 @@ class DatabaseFactory:
         if db_type == 'sqlite':
             return SQLiteDatabaseHandler(kwargs['db_path'])
         elif db_type == 'dynamodb':
-            return DynamoDBDatabaseHandler(kwargs.get('table_prefix', 'majd_yolo'))
+            env = kwargs.get('env', 'dev')  # default to dev
+            project_prefix = kwargs.get('table_prefix', 'majd_yolo')
+            return DynamoDBDatabaseHandler(env=env, project_prefix=project_prefix)
         else:
             raise ValueError("Unsupported db_type. Use 'sqlite' or 'dynamodb'.")

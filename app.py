@@ -10,7 +10,6 @@ import shutil
 from S3_requests import upload_file,download_file
 # Disable GPU usage
 import torch
-from dotenv import load_dotenv
 torch.cuda.is_available = lambda: False
 app = FastAPI()
 S3_bucket_name = os.getenv('S3_BUCKET_NAME')
@@ -25,13 +24,18 @@ from db_for_prediction import DatabaseFactory
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")  
 
+ENVIRONMENT = 'dev' if 'dev' in S3_bucket_name.lower() else 'prod'
 # Initialize database
 if storage_type == "sqlite":
     # make sure DB_PATH is defined or imported from your config
     db = DatabaseFactory.create_database("sqlite", db_path=DB_PATH)
 elif storage_type == "dynamodb":
     # you can optionally pass a custom prefix for your Dynamo tables
-    db = DatabaseFactory.create_database("dynamodb")
+    db = DatabaseFactory.create_database(
+        "dynamodb",
+        env=ENVIRONMENT,
+        table_prefix='majd_yolo'
+    )
 else:
     raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
 
@@ -54,12 +58,13 @@ def predict(s3_key:str):
 
     db.save_prediction_session(uid, original_path, predicted_path)
     detected_labels = []
+
     for box in results[0].boxes:
         label_idx = int(box.cls[0].item())
         label = model.names[label_idx]
-        score = str(float(box.conf[0]))
-        bbox = box.xyxy[0].tolist()
-        print(Decimal(str(float(box.conf[0]))))
+        score = Decimal(box.conf[0].item())
+        bbox_raw = box.xyxy[0].tolist()
+        bbox = [Decimal(x) for x in bbox_raw]
         db.save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
     upload_file(predicted_path,S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
