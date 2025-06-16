@@ -57,8 +57,9 @@ def predict(s3_key:str):
     for box in results[0].boxes:
         label_idx = int(box.cls[0].item())
         label = model.names[label_idx]
-        score = Decimal(str(box.conf[0]))
+        score = str(float(box.conf[0]))
         bbox = box.xyxy[0].tolist()
+        print(Decimal(str(float(box.conf[0]))))
         db.save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
     upload_file(predicted_path,S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
