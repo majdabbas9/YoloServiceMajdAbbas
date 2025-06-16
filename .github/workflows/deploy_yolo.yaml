@@ -67,6 +67,7 @@ jobs:
           echo """
           IMG_NAME="majdabbas99${{ inputs.image }}"
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET }}
+          STORAGE_TYPE="dynamodb"
           """ > .env
           
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
