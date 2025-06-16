@@ -57,7 +57,7 @@ def predict(s3_key:str):
     for box in results[0].boxes:
         label_idx = int(box.cls[0].item())
         label = model.names[label_idx]
-        score = Decimal(str(float(box.conf[0])))
+        score = Decimal(box.conf[0])
         bbox = box.xyxy[0].tolist()
         db.save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
