@@ -66,45 +66,23 @@ class SQLiteDatabaseHandler(BaseDatabaseHandler):
 
 # === DynamoDB Implementation ===
 class DynamoDBDatabaseHandler(BaseDatabaseHandler):
-    def __init__(self, table_prefix='ml'):
+    def __init__(self, table_prefix='majd_yolo'):
         self.dynamodb = boto3.resource('dynamodb')
-        self.client = boto3.client('dynamodb')
         self.prefix = table_prefix
-        self.init_db()
+        self.prediction_sessions_table = self.dynamodb.Table(f"{self.prefix}_prediction_sessions")
+        self.detection_objects_table = self.dynamodb.Table(f"{self.prefix}_detection_objects")
+        # self.init_db()  # <-- No need to call this anymore if tables already exist
 
     def init_db(self):
-        self._create_table_if_not_exists(
-            f"{self.prefix}_prediction_sessions",
-            [{'AttributeName': 'uid', 'KeyType': 'HASH'}],
-            [{'AttributeName': 'uid', 'AttributeType': 'S'}]
-        )
-
-        self._create_table_if_not_exists(
-            f"{self.prefix}_detection_objects",
-            [{'AttributeName': 'id', 'KeyType': 'HASH'}],
-            [{'AttributeName': 'id', 'AttributeType': 'S'}]
-        )
-
-    def _create_table_if_not_exists(self, table_name, key_schema, attr_definitions):
+        # Optional: Just validate the tables exist
         try:
-            self.client.describe_table(TableName=table_name)
+            self.prediction_sessions_table.load()
+            self.detection_objects_table.load()
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                self.dynamodb.create_table(
-                    TableName=table_name,
-                    KeySchema=key_schema,
-                    AttributeDefinitions=attr_definitions,
-                    BillingMode='PAY_PER_REQUEST'
-                )
-                print(f"Creating table {table_name}...")
-                waiter = self.client.get_waiter('table_exists')
-                waiter.wait(TableName=table_name)
-            else:
-                raise
+            raise RuntimeError("One or more DynamoDB tables do not exist") from e
 
     def save_prediction_session(self, uid, original_image, predicted_image):
-        table = self.dynamodb.Table(f"{self.prefix}_prediction_sessions")
-        table.put_item(Item={
+        self.prediction_sessions_table.put_item(Item={
             'uid': uid,
             'timestamp': datetime.utcnow().isoformat(),
             'original_image': original_image,
@@ -112,8 +90,7 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
         })
 
     def save_detection_object(self, prediction_uid, label, score, box):
-        table = self.dynamodb.Table(f"{self.prefix}_detection_objects")
-        table.put_item(Item={
+        self.detection_objects_table.put_item(Item={
             'id': f"{prediction_uid}_{label}_{datetime.utcnow().timestamp()}",
             'prediction_uid': prediction_uid,
             'label': label,
