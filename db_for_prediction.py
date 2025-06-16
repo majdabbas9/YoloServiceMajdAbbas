@@ -67,7 +67,7 @@ class SQLiteDatabaseHandler(BaseDatabaseHandler):
 # === DynamoDB Implementation ===
 class DynamoDBDatabaseHandler(BaseDatabaseHandler):
     def __init__(self, table_prefix='majd_yolo'):
-        self.dynamodb = boto3.resource('dynamodb')
+        self.dynamodb = boto3.resource('dynamodb',region_name='eu-west-1')
         self.prefix = table_prefix
         self.prediction_sessions_table = self.dynamodb.Table(f"{self.prefix}_prediction_sessions")
         self.detection_objects_table = self.dynamodb.Table(f"{self.prefix}_detection_objects")
