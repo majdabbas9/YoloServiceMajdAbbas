@@ -106,6 +106,6 @@ class DatabaseFactory:
         if db_type == 'sqlite':
             return SQLiteDatabaseHandler(kwargs['db_path'])
         elif db_type == 'dynamodb':
-            return DynamoDBDatabaseHandler(kwargs.get('table_prefix', 'ml'))
+            return DynamoDBDatabaseHandler(kwargs.get('table_prefix', 'majd_yolo'))
         else:
             raise ValueError("Unsupported db_type. Use 'sqlite' or 'dynamodb'.")
