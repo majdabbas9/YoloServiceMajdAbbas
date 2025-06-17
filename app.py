@@ -16,6 +16,7 @@ import torch
 import time
 from db_for_prediction import DatabaseFactory
 import json
+
 torch.cuda.is_available = lambda: False
 app = FastAPI()
 S3_bucket_name = os.getenv('S3_BUCKET_NAME')
