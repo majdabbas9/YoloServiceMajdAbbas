@@ -9,7 +9,7 @@ import os
 import uuid
 import shutil
 import boto3
-from S3_requests import upload_file,download_file
+from S3_requests import upload_file, download_file
 import requests
 # Disable GPU usage
 import torch
@@ -29,7 +29,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
 sqs = boto3.client('sqs', region_name='eu-west-1')
 # Download the AI model (tiny model ~6MB)
-model = YOLO("yolov8n.pt")  
+model = YOLO("yolov8n.pt")
 
 ENVIRONMENT = 'dev' if 'dev' in S3_bucket_name.lower() else 'prod'
 # Initialize database
@@ -56,7 +56,6 @@ def poll_sqs_messages():
                 WaitTimeSeconds=20
             )
             messages = response.get('Messages', [])
-
             for msg in messages:
                 msg_body = json.loads(msg['Body'])
                 s3_key = msg_body['s3_key']
@@ -107,23 +106,25 @@ def poll_sqs_messages():
             print(f"[SQS Polling Error] {e}")
             time.sleep(5)  # avoid tight retry loop
 
+
 @app.on_event("startup")
 def start_sqs_polling():
     print("Starting SQS polling thread...")
     thread = threading.Thread(target=poll_sqs_messages, daemon=True)
     thread.start()
 
+
 @app.post("/predict")
-def predict(s3_key:str):
+def predict(s3_key: str):
     """
     Predict objects in an image
     """
 
     # ext = os.path.splitext(file.filename)[1]
     uid = str(uuid.uuid4())
-    ext = '.'+s3_key.split('.')[-1]
+    ext = '.' + s3_key.split('.')[-1]
     original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    download_file(S3_bucket_name,s3_key,original_path)
+    download_file(S3_bucket_name, s3_key, original_path)
     predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
     results = model(original_path, device="cpu")
     annotated_frame = results[0].plot()  # NumPy image with boxes
@@ -141,12 +142,13 @@ def predict(s3_key:str):
         bbox = [Decimal(x) for x in bbox_raw]
         db.save_detection_object(uid, label, score, bbox)
         detected_labels.append(label)
-    upload_file(predicted_path,S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
+    upload_file(predicted_path, S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
     return {
         "prediction_uid": uid,
         "detection_count": len(results[0].boxes),
         "labels": detected_labels
     }
+
 
 @app.get("/prediction/{uid}")
 def get_prediction_by_uid(uid: str):
@@ -159,13 +161,13 @@ def get_prediction_by_uid(uid: str):
         session = conn.execute("SELECT * FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
         if not session:
             raise HTTPException(status_code=404, detail="Prediction not found")
-            
+
         # Get all detection objects for this prediction
         objects = conn.execute(
-            "SELECT * FROM detection_objects WHERE prediction_uid = ?", 
+            "SELECT * FROM detection_objects WHERE prediction_uid = ?",
             (uid,)
         ).fetchall()
-        
+
         return {
             "uid": session["uid"],
             "timestamp": session["timestamp"],
@@ -180,6 +182,7 @@ def get_prediction_by_uid(uid: str):
                 } for obj in objects
             ]
         }
+
 
 @app.get("/predictions/label/{label}")
 def get_predictions_by_label(label: str):
@@ -196,6 +199,7 @@ def get_predictions_by_label(label: str):
         """, (label,)).fetchall()
         return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
 
+
 @app.get("/predictions/score/{min_score}")
 def get_predictions_by_score(min_score: float):
     """
@@ -211,6 +215,7 @@ def get_predictions_by_score(min_score: float):
         """, (min_score,)).fetchall()
         return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
 
+
 @app.get("/image/{type}/{filename}")
 def get_image(type: str, filename: str):
     """
@@ -222,6 +227,7 @@ def get_image(type: str, filename: str):
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(path)
+
 
 @app.get("/prediction/{uid}/image")
 def get_prediction_image(uid: str, request: Request):
@@ -246,13 +252,16 @@ def get_prediction_image(uid: str, request: Request):
         # If the client doesn't accept image, respond with 406 Not Acceptable
         raise HTTPException(status_code=406, detail="Client does not accept an image format")
 
+
 @app.get("/health")
 def health():
     """
     Health check endpoint
     """
-    return {"status": "ok","message": "Service is running"}
+    return {"status": "ok", "message": "Service is running"}
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8080)
