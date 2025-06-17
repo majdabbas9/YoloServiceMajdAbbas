@@ -17,6 +17,9 @@ class BaseDatabaseHandler(ABC):
     @abstractmethod
     def save_detection_object(self, prediction_uid, label, score, box):
         pass
+    @abstractmethod
+    def get_predicted_image(self, uid):
+        pass
 
 
 # === SQLite Implementation ===
@@ -63,6 +66,14 @@ class SQLiteDatabaseHandler(BaseDatabaseHandler):
                 VALUES (?, ?, ?, ?)
             """, (prediction_uid, label, score, str(box)))
 
+    def get_predicted_image(self, uid):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("""
+                SELECT predicted_image FROM prediction_sessions WHERE uid = ?
+            """, (uid,))
+            row = cursor.fetchone()
+            return row[0] if row else None
+
 
 # === DynamoDB Implementation ===
 class DynamoDBDatabaseHandler(BaseDatabaseHandler):
@@ -97,6 +108,11 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
             'score': score,
             'box': str(box)
         })
+
+    def get_predicted_image(self, uid):
+        response = self.prediction_sessions_table.get_item(Key={'uid': uid})
+        item = response.get('Item')
+        return item.get('predicted_image') if item else None
 
 
 # === Factory Method ===

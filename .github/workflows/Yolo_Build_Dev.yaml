@@ -44,3 +44,4 @@ jobs:
       EC2_HOST: ${{ secrets.EC2_HOST_DEV }}
       EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
       S3_BUCKET: ${{ secrets.S3_BUCKET_DEV }}
+      QUEUE_URL: ${{ secrets.QUEUE_URL_DEV }}
