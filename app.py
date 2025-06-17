@@ -95,7 +95,7 @@ def poll_sqs_messages():
                 }
 
                 try:
-                    polybot_response = requests.post(f'{Polybot_url}/predictions', json=payload)
+                    polybot_response = requests.post(f'http://{Polybot_url}:8443/predictions', json=payload)
                     polybot_response.raise_for_status()
                 except Exception as post_err:
                     print(f"[Polybot Callback Error] {post_err}")
