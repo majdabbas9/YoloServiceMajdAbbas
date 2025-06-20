@@ -78,8 +78,7 @@ def poll_sqs_messages():
                 for box in results[0].boxes:
                     label_idx = int(box.cls[0].item())
                     label = model.names[label_idx]
-                    # score = Decimal(box.conf[0].item())
-                    score = Decimal(0.5)
+                    score = Decimal(box.conf[0].item())
                     bbox_raw = box.xyxy[0].tolist()
                     bbox = [Decimal(x) for x in bbox_raw]
                     db.save_detection_object(c,uid, label, score, bbox)
