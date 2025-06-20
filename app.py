@@ -74,7 +74,7 @@ def poll_sqs_messages():
 
                 db.save_prediction_session(uid, original_path, predicted_path)
                 detected_labels = []
-
+                c = 0
                 for box in results[0].boxes:
                     label_idx = int(box.cls[0].item())
                     label = model.names[label_idx]
@@ -82,7 +82,8 @@ def poll_sqs_messages():
                     score = Decimal(0.5)
                     bbox_raw = box.xyxy[0].tolist()
                     bbox = [Decimal(x) for x in bbox_raw]
-                    db.save_detection_object(uid, label, score, bbox)
+                    db.save_detection_object(c,uid, label, score, bbox)
+                    c += 1
                     detected_labels.append(label)
                 upload_file(predicted_path, S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
                 time.sleep(1.5)
