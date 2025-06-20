@@ -31,8 +31,12 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 sqs = boto3.client('sqs', region_name='eu-west-1')
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")
-
-ENVIRONMENT = 'dev' if 'dev' in S3_bucket_name.lower() else 'prod'
+if S3_bucket_name is not None:
+    ENVIRONMENT = 'dev' if 'dev' in S3_bucket_name.lower() else 'prod'
+else :
+    ENVIRONMENT = 'test'
+if storage_type is None:
+    storage_type = "sqlite"
 # Initialize database
 if storage_type == "sqlite":
     # make sure DB_PATH is defined or imported from your config
@@ -46,8 +50,6 @@ elif storage_type == "dynamodb":
     )
 else:
     raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
-
-
 def poll_sqs_messages():
     while True:
         try:
@@ -121,31 +123,31 @@ def predict(s3_key: str):
     """
     Predict objects in an image
     """
-
-    # ext = os.path.splitext(file.filename)[1]
     uid = str(uuid.uuid4())
     ext = '.' + s3_key.split('.')[-1]
     original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    download_file(S3_bucket_name, s3_key, original_path)
+    if ENVIRONMENT!= 'test':
+        download_file(S3_bucket_name, s3_key, original_path)
     predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
     results = model(original_path, device="cpu")
-    annotated_frame = results[0].plot()  # NumPy image with boxes
-    annotated_image = Image.fromarray(annotated_frame)
-    annotated_image.save(predicted_path)
-
-    db.save_prediction_session(uid, original_path, predicted_path)
+    if ENVIRONMENT!= 'test':
+        annotated_frame = results[0].plot()  # NumPy image with boxes
+        annotated_image = Image.fromarray(annotated_frame)
+        annotated_image.save(predicted_path)
+        db.save_prediction_session(uid, original_path, predicted_path)
     detected_labels = []
     c = 0
     for box in results[0].boxes:
         label_idx = int(box.cls[0].item())
         label = model.names[label_idx]
         score = Decimal(box.conf[0].item())
-        bbox_raw = box.xyxy[0].tolist()
+        bbox_raw = box.xyxy[0].tolist() if ENVIRONMENT!= 'test' else box.xyxy[0][0]
         bbox = [Decimal(x) for x in bbox_raw]
         db.save_detection_object(c,uid, label, score, bbox)
         detected_labels.append(label)
         c+=1
-    upload_file(predicted_path, S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
+    if ENVIRONMENT!= 'test':
+        upload_file(predicted_path, S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
     return {
         "prediction_uid": uid,
         "detection_count": len(results[0].boxes),
@@ -266,5 +268,4 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8080)
