@@ -15,7 +15,7 @@ class BaseDatabaseHandler(ABC):
         pass
 
     @abstractmethod
-    def save_detection_object(self, prediction_uid, label, score, box):
+    def save_detection_object(self,c,prediction_uid, label, score, box):
         pass
     @abstractmethod
     def get_predicted_image(self, uid):
@@ -52,14 +52,14 @@ class SQLiteDatabaseHandler(BaseDatabaseHandler):
             conn.execute("CREATE INDEX IF NOT EXISTS idx_label ON detection_objects (label)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_score ON detection_objects (score)")
 
-    def save_prediction_session(self, uid, original_image, predicted_image):
+    def save_prediction_session(self,uid, original_image, predicted_image):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT INTO prediction_sessions (uid, original_image, predicted_image)
                 VALUES (?, ?, ?)
             """, (uid, original_image, predicted_image))
 
-    def save_detection_object(self, prediction_uid, label, score, box):
+    def save_detection_object(self,c,prediction_uid, label, score, box):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 INSERT INTO detection_objects (prediction_uid, label, score, box)
@@ -101,11 +101,12 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
             'predicted_image': predicted_image
         })
 
-    def save_detection_object(self, prediction_uid, label, score, box):
+    def save_detection_object(self,c,prediction_uid, label, score, box):
         self.detection_objects_table.put_item(Item={
             'prediction_uid': prediction_uid,
+            'score': f'{score}_{c}',
             'label': label,
-            'score': score,
+            'label_score': score,
             'box': str(box)
         })
 
