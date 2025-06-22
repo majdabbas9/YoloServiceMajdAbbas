@@ -34,7 +34,7 @@ jobs:
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_by_uid
 
       - name: Run prediction by correct label test
-        run: PYTHONPATH=. pytest -v Test/test_prediction_by_correct_label
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_by_correct_label
 
       - name: Run prediction by wrong label test
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_by_wrong_label
