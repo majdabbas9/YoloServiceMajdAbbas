@@ -88,6 +88,7 @@ def poll_sqs_messages():
                 time.sleep(1.5)
                 # send a post request to Polybot with uid chat_id file_path as json
                 # Notify Polybot
+                print(uid)
                 payload = {
                     "uid": uid,
                     "chat_id": chat_id,
@@ -115,76 +116,12 @@ def start_sqs_polling():
     thread = threading.Thread(target=poll_sqs_messages, daemon=True)
     thread.start()
 
-
-@app.post("/predict")
-def predict(s3_key: str):
-    """
-    Predict objects in an image
-    """
-    uid = str(uuid.uuid4())
-    ext = '.' + s3_key.split('.')[-1]
-    original_path = os.path.join(UPLOAD_DIR, uid + ext)
-    if ENVIRONMENT!= 'test':
-        download_file(S3_bucket_name, s3_key, original_path)
-    predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
-    results = model(original_path, device="cpu")
-    if ENVIRONMENT!= 'test':
-        annotated_frame = results[0].plot()  # NumPy image with boxes
-        annotated_image = Image.fromarray(annotated_frame)
-        annotated_image.save(predicted_path)
-        db.save_prediction_session(uid, original_path, predicted_path)
-    detected_labels = []
-    c = 0
-    for box in results[0].boxes:
-        label_idx = int(box.cls[0].item())
-        label = model.names[label_idx]
-        score = Decimal(box.conf[0].item())
-        bbox_raw = box.xyxy[0].tolist() if ENVIRONMENT!= 'test' else box.xyxy[0][0]
-        bbox = [Decimal(x) for x in bbox_raw]
-        db.save_detection_object(c,uid, label, score, bbox)
-        detected_labels.append(label)
-        c+=1
-    if ENVIRONMENT!= 'test':
-        upload_file(predicted_path, S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
-    return {
-        "prediction_uid": uid,
-        "detection_count": len(results[0].boxes),
-        "labels": detected_labels
-    }
-
-
 @app.get("/prediction/{uid}")
 def get_prediction_by_uid(uid: str):
     """
     Get prediction session by uid with all detected objects
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        # Get prediction session
-        session = conn.execute("SELECT * FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
-        if not session:
-            raise HTTPException(status_code=404, detail="Prediction not found")
-
-        # Get all detection objects for this prediction
-        objects = conn.execute(
-            "SELECT * FROM detection_objects WHERE prediction_uid = ?",
-            (uid,)
-        ).fetchall()
-
-        return {
-            "uid": session["uid"],
-            "timestamp": session["timestamp"],
-            "original_image": session["original_image"],
-            "predicted_image": session["predicted_image"],
-            "detection_objects": [
-                {
-                    "id": obj["id"],
-                    "label": obj["label"],
-                    "score": obj["score"],
-                    "box": obj["box"]
-                } for obj in objects
-            ]
-        }
+    return db.get_prediction_by_uid(uid)
 
 
 @app.get("/predictions/label/{label}")
@@ -192,15 +129,7 @@ def get_predictions_by_label(label: str):
     """
     Get prediction sessions containing objects with specified label
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute("""
-            SELECT DISTINCT ps.uid, ps.timestamp
-            FROM prediction_sessions ps
-            JOIN detection_objects do ON ps.uid = do.prediction_uid
-            WHERE do.label = ?
-        """, (label,)).fetchall()
-        return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
+    return db.get_predictions_by_label(label)
 
 
 @app.get("/predictions/score/{min_score}")
@@ -208,15 +137,7 @@ def get_predictions_by_score(min_score: float):
     """
     Get prediction sessions containing objects with score >= min_score
     """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute("""
-            SELECT DISTINCT ps.uid, ps.timestamp
-            FROM prediction_sessions ps
-            JOIN detection_objects do ON ps.uid = do.prediction_uid
-            WHERE do.score >= ?
-        """, (min_score,)).fetchall()
-        return [{"uid": row["uid"], "timestamp": row["timestamp"]} for row in rows]
+    return db.get_predictions_by_score(min_score)
 
 
 @app.get("/image/{type}/{filename}")
