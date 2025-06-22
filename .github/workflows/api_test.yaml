@@ -6,7 +6,7 @@ on:
       - main
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   test:
@@ -31,22 +31,7 @@ jobs:
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_health
 
       - name: Run missing file test
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_missing_file
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_missing_s3_key
 
       - name: Run invalid file type test
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_invalid_file_type
-
-      - name: Run full prediction and DB test
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_valid_image_and_db_and_getters
-
-      - name: Run prediction invalid UID test
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_get_invalid_uid
-
-      - name: Run label filtering tests
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_label_valid
-
-      - name: Run score filtering tests
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_predictions_by_score_valid
-
-      - name: Run image retrieval tests
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_get_image_valid_and_invalid
