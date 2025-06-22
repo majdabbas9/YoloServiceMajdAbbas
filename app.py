@@ -158,23 +158,7 @@ def get_prediction_image(uid: str, request: Request):
     """
     Get prediction image by uid
     """
-    accept = request.headers.get("accept", "")
-    with sqlite3.connect(DB_PATH) as conn:
-        row = conn.execute("SELECT predicted_image FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Prediction not found")
-        image_path = row[0]
-
-    if not os.path.exists(image_path):
-        raise HTTPException(status_code=404, detail="Predicted image file not found")
-
-    if "image/png" in accept:
-        return FileResponse(image_path, media_type="image/png")
-    elif "image/jpeg" in accept or "image/jpg" in accept:
-        return FileResponse(image_path, media_type="image/jpeg")
-    else:
-        # If the client doesn't accept image, respond with 406 Not Acceptable
-        raise HTTPException(status_code=406, detail="Client does not accept an image format")
+    return db.get_prediction_image(uid,request)
 
 
 @app.get("/health")
