@@ -1,5 +1,4 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
-from decimal import Decimal
 from fastapi.responses import FileResponse, Response
 from ultralytics import YOLO
 from PIL import Image
@@ -80,9 +79,8 @@ def poll_sqs_messages():
                 for box in results[0].boxes:
                     label_idx = int(box.cls[0].item())
                     label = model.names[label_idx]
-                    score = Decimal(box.conf[0].item())
-                    bbox_raw = box.xyxy[0].tolist()
-                    bbox = [Decimal(x) for x in bbox_raw]
+                    score = box.conf[0].item()
+                    bbox = box.xyxy[0].tolist()
                     db.save_detection_object(c,uid, label, score, bbox)
                     c += 1
                     detected_labels.append(label)

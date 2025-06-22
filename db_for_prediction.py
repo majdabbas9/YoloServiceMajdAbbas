@@ -102,6 +102,9 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
         })
 
     def save_detection_object(self,c,prediction_uid, label, score, box):
+        from decimal import Decimal
+        score = Decimal(score)
+        box = [Decimal(x) for x in box]
         self.detection_objects_table.put_item(Item={
             'prediction_uid': prediction_uid,
             'score': f'{score}_{c}',
