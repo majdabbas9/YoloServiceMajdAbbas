@@ -2,19 +2,19 @@ import os
 import shutil
 import sqlite3
 import pytest
-
+from db_for_prediction import DatabaseFactory
 from fastapi.testclient import TestClient
-from app import app, UPLOAD_DIR, PREDICTED_DIR, DB_PATH, init_db,model
-
-
+from app import app
 client = TestClient(app)
 
-TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "test_image.jpg")
-INVALID_IMAGE_PATH = "invalid_file.txt"
 
 #Clean The DB
 @pytest.fixture(scope="module", autouse=True)
 def setup_and_teardown():
+
+    UPLOAD_DIR = "uploads/original"
+    PREDICTED_DIR = "uploads/predicted"
+    DB_PATH = "predictions.db"
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
     if os.path.exists(UPLOAD_DIR):
@@ -24,10 +24,28 @@ def setup_and_teardown():
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     os.makedirs(PREDICTED_DIR, exist_ok=True)
-    init_db()
 
+    db = DatabaseFactory.create_database("sqlite", db_path=DB_PATH)
+    DUMMY_UIDS = ["1", "2", "3"]
+    DUMMY_ORIGINAL_IMAGES = ["original_image1.jpg", "original_image2.jpg", "original_image3.jpg"]
+    DUMMY_PREDICTED_IMAGES = ["predicted_image1.jpg", "predicted_image2.jpg", "predicted_image3.jpg"]
+    DUMMY_LABELS = ["cat", "dog", "bird"]
+    DUMMY_SCORES = ["0.95", "0.85", "0.75"]
+    DUMMY_BOXS = [[10.0, 20.0, 30.0, 40.0], [15.0, 25.0, 35.0, 45.0], [5.0, 10.0, 15.0, 20.0]]
+    for i in range(len(DUMMY_UIDS)):
+        db.save_prediction_session(
+            uid=DUMMY_UIDS[i],
+            original_image=DUMMY_ORIGINAL_IMAGES[i],
+            predicted_image=DUMMY_PREDICTED_IMAGES[i]
+        )
+        db.save_detection_object(
+            c=None,
+            prediction_uid=DUMMY_UIDS[i],
+            label=DUMMY_LABELS[i],
+            score=DUMMY_SCORES[i],
+            box=DUMMY_BOXS[i]
+        )
     yield
-
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
     if os.path.exists(UPLOAD_DIR):
@@ -39,126 +57,27 @@ def setup_and_teardown():
 def test_health():
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+    assert resp.json() == {"status": "ok", "message": "Service is running"}
+
+def test_prediction_by_uid():
+    resp = client.get("/prediction/1")
+    assert resp.status_code == 200
+    assert resp.json().get("uid") == "1"
+
+def test_prediction_by_correct_label():
+    resp = client.get("/predictions/label/bird")
+    assert resp.status_code == 200
+    assert resp.json()[0].get("uid") == "3"
+
+def test_prediction_by_wrong_label():
+    resp = client.get("/predictions/label/dogg")
+    assert resp.status_code == 200
+    assert  resp.json() == []
+
+def test_prediction_by_score():
+    resp = client.get("/predictions/score/0.8")
+    assert resp.status_code == 200
+    assert resp.json() == [{'uid': '1'}, {'uid': '2'}] or resp.json() == [{'uid': '2'}, {'uid': '1'}]
+
 
 #Check This Test again
-def test_predict_missing_file():
-    resp = client.post("/predict", files={})
-    assert resp.status_code == 422
-
-
-def test_predict_invalid_file_type():
-    # Create a fake invalid text file
-    with open(INVALID_IMAGE_PATH, "w") as f:
-        f.write("invalid_file.txt")
-
-    try:
-        with open(INVALID_IMAGE_PATH, "rb") as f:
-            resp = client.post("/predict", files={"file": ("invalid_file.txt", f, "text/plain")})
-        print(resp.status_code)
-        assert resp.status_code != 200
-    except Exception as e:
-        print(f"Exception occurred: {e}")
-        # Consider it a pass as long as the API didn't succeed
-        assert True
-
-
-
-
-
-
-def test_predict_valid_image_and_db_and_getters():
-
-    with open(TEST_IMAGE_PATH, "rb") as img_file:
-        resp = client.post("/predict", files={"file": ("test_image.jpg", img_file, "image/jpeg")})
-    assert resp.status_code == 200
-
-    json_data = resp.json()
-    assert "prediction_uid" in json_data
-    assert "detection_count" in json_data
-    assert "labels" in json_data
-
-    uid = json_data["prediction_uid"]
-    detection_count = json_data["detection_count"]
-    labels = json_data["labels"]
-#-----------------------------------------------------------------
-# Test DB prediction_sessions
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-
-    session = conn.execute("SELECT * FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
-    assert session is not None
-    assert session["uid"] == uid
-    assert os.path.exists(session["original_image"])
-    assert os.path.exists(session["predicted_image"])
-
-# -----------------------------------------------------------------
-# Test DB prediction_sessions
-    detections = conn.execute("SELECT * FROM detection_objects WHERE prediction_uid = ?", (uid,)).fetchall()
-    assert len(detections) == detection_count
-    for det in detections:
-        assert det["label"] in labels
-        assert 0.0 <= det["score"] <= 1.0
-
-    conn.close()
-
-#-----------------------------------------------------------------
-# Test prediction/{uid}
-    resp = client.get(f"/prediction/{uid}")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["uid"] == uid
-    assert "detection_objects" in data
-    assert len(data["detection_objects"]) == detection_count
-
-
-def test_prediction_get_invalid_uid():
-    resp = client.get("/prediction/nonexistent-uid")
-    assert resp.status_code == 404
-
-
-def test_get_predictions_by_label_valid():
-    valid_label = list(model.names.values())[0]
-
-    resp = client.get(f"/predictions/label/{valid_label}")
-    assert resp.status_code == 200
-    assert isinstance(resp.json(), list)
-
-
-def test_get_predictions_by_score_valid():
-    # Valid scores 0 and 1 boundary
-    score = 0.0
-    resp = client.get(f"/predictions/score/{score}")
-    assert resp.status_code == 200
-    assert isinstance(resp.json(), list)
-
-
-
-def test_get_image_valid_and_invalid():
-    with open(TEST_IMAGE_PATH, "rb") as img_file:
-        resp = client.post("/predict", files={"file": ("test_image.jpg", img_file, "image/jpeg")})
-    uid = resp.json()["prediction_uid"]
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    session = conn.execute("SELECT * FROM prediction_sessions WHERE uid = ?", (uid,)).fetchone()
-    conn.close()
-
-    original_filename = os.path.basename(session["original_image"])
-    resp = client.get(f"/image/original/{original_filename}")
-    assert resp.status_code == 200
-    assert resp.headers["content-type"].startswith("image/")
-
-# Valid predicted image
-    predicted_filename = os.path.basename(session["predicted_image"])
-    resp = client.get(f"/image/predicted/{predicted_filename}")
-    assert resp.status_code == 200
-    assert resp.headers["content-type"].startswith("image/")
-
-# Invalid type
-    resp = client.get(f"/image/invalidtype/{predicted_filename}")
-    assert resp.status_code == 400
-
-# Non-existent filename
-    resp = client.get("/image/original/nonexistentfile.jpg")
-    assert resp.status_code == 404

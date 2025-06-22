@@ -17,6 +17,10 @@ on:
         required: true
       S3_BUCKET:
         required: true
+      QUEUE_URL:
+        required: true
+      POLYBOT_URL:
+        required: true
   workflow_dispatch:
     inputs:
       image:
@@ -67,6 +71,9 @@ jobs:
           echo """
           IMG_NAME="majdabbas99${{ inputs.image }}"
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET }}
+          STORAGE_TYPE="dynamodb"
+          QUEUE_URL=${{ secrets.QUEUE_URL }}
+          POLYBOT_URL=${{ secrets.POLYBOT_URL }}
           """ > .env
           
           scp .env ec2:/home/${{ secrets.EC2_USERNAME }}/
