@@ -9,7 +9,7 @@ on:
       - dev
 
 jobs:
-  test:
+  Yolo_api_testing:
     runs-on: ubuntu-latest
 
     steps:
