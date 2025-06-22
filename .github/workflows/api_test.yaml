@@ -30,8 +30,14 @@ jobs:
       - name: Run health check test
         run: PYTHONPATH=. pytest -v Test/test_api.py::test_health
 
-      - name: Run missing file test
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_missing_s3_key
+      - name: Run prediction by uid test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_by_uid
 
-      - name: Run invalid file type test
-        run: PYTHONPATH=. pytest -v Test/test_api.py::test_predict_invalid_file_type
+      - name: Run prediction by correct label test
+        run: PYTHONPATH=. pytest -v Test/test_prediction_by_correct_label
+
+      - name: Run prediction by wrong label test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_by_wrong_label
+
+      - name: Run prediction by score test
+        run: PYTHONPATH=. pytest -v Test/test_api.py::test_prediction_by_score
