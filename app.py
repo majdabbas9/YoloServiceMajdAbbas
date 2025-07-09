@@ -28,6 +28,8 @@ DB_PATH = "predictions.db"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
 sqs = boto3.client('sqs', region_name='eu-west-1')
+from dotenv import load_dotenv
+load_dotenv()
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")
 if S3_bucket_name is not None:
