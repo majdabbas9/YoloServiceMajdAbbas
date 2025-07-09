@@ -23,7 +23,7 @@ jobs:
       # 🧱 Build and Push the Image
       - id: step1
         run: |
-          img_name="ghcr.io/majdabbas9/yolo_image:${{ github.run_number }}"
+          img_name="ghcr.io/majdabbas9/yolo_dev_image:${{ github.run_number }}"
           docker build --push -t "$img_name" .
           echo "image=$img_name" >> "$GITHUB_OUTPUT"
 
