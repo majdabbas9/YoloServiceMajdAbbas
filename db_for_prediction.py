@@ -176,8 +176,7 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
     def __init__(self, env='dev', project_prefix='majd_yolo'):
         self.dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
         # Compose full prefix using environment + project prefix
-        self.prefix = f"{env}_{project_prefix}"  # e.g. "dev_majd_yolo" or "prod_majd_yolo"
-
+        self.prefix = f"{project_prefix}_{env}"  # e.g. "dev_majd_yolo" or "prod_majd_yolo"
         self.prediction_sessions_table = self.dynamodb.Table(f"{self.prefix}_prediction_sessions")
         self.detection_objects_table = self.dynamodb.Table(f"{self.prefix}_detection_objects")
 
