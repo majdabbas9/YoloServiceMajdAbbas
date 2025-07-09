@@ -15,7 +15,8 @@ import torch
 import time
 from db_for_prediction import DatabaseFactory
 import json
-
+from dotenv import load_dotenv
+load_dotenv()
 torch.cuda.is_available = lambda: False
 app = FastAPI()
 S3_bucket_name = os.getenv('S3_BUCKET_NAME')
@@ -28,8 +29,7 @@ DB_PATH = "predictions.db"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PREDICTED_DIR, exist_ok=True)
 sqs = boto3.client('sqs', region_name='eu-west-1')
-from dotenv import load_dotenv
-load_dotenv()
+
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")
 if S3_bucket_name is not None:
