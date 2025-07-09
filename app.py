@@ -15,6 +15,8 @@ import torch
 import time
 from db_for_prediction import DatabaseFactory
 import json
+from prometheus_client import Summary, make_asgi_app
+from starlette.middleware.wsgi import WSGIMiddleware
 
 torch.cuda.is_available = lambda: False
 app = FastAPI()
@@ -168,7 +170,33 @@ def health():
     """
     return {"status": "ok", "message": "Service is running"}
 
+YOLO_RESPONSE_TIME = Summary(
+    'yolo_response_time_seconds',
+    'Time spent on YOLO predictions'
+)
+@YOLO_RESPONSE_TIME.time()
+def run_model_prediction(original_path, predicted_path, uid):
+    results = model(original_path, device="cpu")
+    annotated_frame = results[0].plot()  # NumPy image with boxes
+    annotated_image = Image.fromarray(annotated_frame)
+    annotated_image.save(predicted_path)
 
+    db.save_prediction_session(uid, original_path, predicted_path)
+    c = 0
+    detected_labels = []
+    for box in results[0].boxes:
+        label_idx = int(box.cls[0].item())
+        label = model.names[label_idx]
+        score = box.conf[0].item()
+        bbox = box.xyxy[0].tolist()
+        db.save_detection_object(c, uid, label, score, bbox)
+        c += 1
+        detected_labels.append(label)
+
+    return detected_labels
+
+metrics_app = make_wsgi_app()
+app.mount("/metrics", WSGIMiddleware(metrics_app))
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
