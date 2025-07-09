@@ -51,6 +51,33 @@ elif storage_type == "dynamodb":
     )
 else:
     raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
+YOLO_RESPONSE_TIME = Summary(
+    'yolo_response_time_seconds',
+    'Time spent on YOLO predictions'
+)
+@YOLO_RESPONSE_TIME.time()
+def run_model_prediction(original_path, predicted_path, uid):
+    results = model(original_path, device="cpu")
+    annotated_frame = results[0].plot()  # NumPy image with boxes
+    annotated_image = Image.fromarray(annotated_frame)
+    annotated_image.save(predicted_path)
+
+    db.save_prediction_session(uid, original_path, predicted_path)
+    c = 0
+    detected_labels = []
+    for box in results[0].boxes:
+        label_idx = int(box.cls[0].item())
+        label = model.names[label_idx]
+        score = box.conf[0].item()
+        bbox = box.xyxy[0].tolist()
+        db.save_detection_object(c, uid, label, score, bbox)
+        c += 1
+        detected_labels.append(label)
+
+    return detected_labels
+
+metrics_app = make_wsgi_app()
+app.mount("/metrics", WSGIMiddleware(metrics_app))
 def poll_sqs_messages():
     while True:
         try:
@@ -70,22 +97,7 @@ def poll_sqs_messages():
                 original_path = os.path.join(UPLOAD_DIR, uid + ext)
                 download_file(S3_bucket_name, s3_key, original_path)
                 predicted_path = os.path.join(PREDICTED_DIR, uid + ext)
-                results = model(original_path, device="cpu")
-                annotated_frame = results[0].plot()  # NumPy image with boxes
-                annotated_image = Image.fromarray(annotated_frame)
-                annotated_image.save(predicted_path)
-
-                db.save_prediction_session(uid, original_path, predicted_path)
-                detected_labels = []
-                c = 0
-                for box in results[0].boxes:
-                    label_idx = int(box.cls[0].item())
-                    label = model.names[label_idx]
-                    score = box.conf[0].item()
-                    bbox = box.xyxy[0].tolist()
-                    db.save_detection_object(c,uid, label, score, bbox)
-                    c += 1
-                    detected_labels.append(label)
+                run_model_prediction(original_path, predicted_path, uid)
                 upload_file(predicted_path, S3_bucket_name, f'yolo_to_poly_images/{s3_key.split("/")[-1]}')
                 time.sleep(1.5)
                 # send a post request to Polybot with uid chat_id file_path as json
@@ -170,33 +182,6 @@ def health():
     """
     return {"status": "ok", "message": "Service is running"}
 
-YOLO_RESPONSE_TIME = Summary(
-    'yolo_response_time_seconds',
-    'Time spent on YOLO predictions'
-)
-@YOLO_RESPONSE_TIME.time()
-def run_model_prediction(original_path, predicted_path, uid):
-    results = model(original_path, device="cpu")
-    annotated_frame = results[0].plot()  # NumPy image with boxes
-    annotated_image = Image.fromarray(annotated_frame)
-    annotated_image.save(predicted_path)
-
-    db.save_prediction_session(uid, original_path, predicted_path)
-    c = 0
-    detected_labels = []
-    for box in results[0].boxes:
-        label_idx = int(box.cls[0].item())
-        label = model.names[label_idx]
-        score = box.conf[0].item()
-        bbox = box.xyxy[0].tolist()
-        db.save_detection_object(c, uid, label, score, bbox)
-        c += 1
-        detected_labels.append(label)
-
-    return detected_labels
-
-metrics_app = make_wsgi_app()
-app.mount("/metrics", WSGIMiddleware(metrics_app))
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
