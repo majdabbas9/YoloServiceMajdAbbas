@@ -1,5 +1,4 @@
-# The name of the workflow
-name: yolo Build Dev
+name: Yolo Build Dev
 
 on:
   push:
@@ -10,39 +9,37 @@ on:
 jobs:
   Build:
     runs-on: ubuntu-latest
-    environment: production
+    environment: dev
     outputs:
       output1: ${{ steps.step1.outputs.image }}
+
     steps:
       - uses: actions/checkout@v4
-      - name: Build Docker image
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
-        run :
-          echo "Building Docker image for dev branch"
 
+      # 🧪 Log in to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u majdabbas9 --password-stdin
+
+      # 🧱 Build and Push the Image
       - id: step1
         run: |
-          docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}"
-          
-          img_name="majdabbas99/yolo_build_dev:${{github.run_number}}"
-          img_name1="/yolo_build_dev:${{github.run_number}}"
-          # same docker_image to pass it to the next workflow 
-          echo "image=$img_name1" >> "$GITHUB_OUTPUT"
-          echo "Building Docker image: $img_name1"
-          # build & push the image 
-          docker build --push -t $img_name  .
+          img_name="ghcr.io/majdabbas9/yolo_dev_image:${{ github.run_number }}"
+          docker build --push -t "$img_name" .
+          echo "image=$img_name" >> "$GITHUB_OUTPUT"
 
-  Deploy:
-    needs: Build
-    uses: ./.github/workflows/deploy_yolo.yaml
-    with:
-      image: ${{needs.Build.outputs.output1}}
-    secrets:
-      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-      EC2_HOST: ${{ secrets.EC2_HOST_DEV }}
-      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-      S3_BUCKET: ${{ secrets.S3_BUCKET_DEV }}
-      QUEUE_URL: ${{ secrets.QUEUE_URL_DEV }}
-      POLYBOT_URL: ${{ secrets.POLYBOT_URL_DEV }}
+      # 🔐 Push the image name to AWS SSM
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-west-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Store image name in SSM
+        run: |
+          aws ssm put-parameter \
+            --name "/majd/dev/yolo_image_name" \
+            --value "${{ steps.step1.outputs.image }}" \
+            --type "SecureString" \
+            --overwrite \
+            --region "eu-west-1"
