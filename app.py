@@ -45,7 +45,7 @@ elif storage_type == "dynamodb":
     db = DatabaseFactory.create_database(
         "dynamodb",
         env=ENVIRONMENT,
-        table_prefix='majd_yolo'
+        table_prefix='majd'
     )
 else:
     raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
