@@ -32,6 +32,8 @@ os.makedirs(PREDICTED_DIR, exist_ok=True)
 sqs = boto3.client('sqs', region_name='eu-west-1')
 # Download the AI model (tiny model ~6MB)
 model = YOLO("yolov8n.pt")
+DynamoDB_session = os.getenv("DYNAMODB_SESSION")
+DynamoDB_objects = os.getenv("DYNAMODB_OBJECTS")
 if S3_bucket_name is not None:
     ENVIRONMENT = 'dev' if 'dev' in S3_bucket_name.lower() else 'prod'
 else :
@@ -45,10 +47,8 @@ if storage_type == "sqlite":
 elif storage_type == "dynamodb":
     # you can optionally pass a custom prefix for your Dynamo tables
     db = DatabaseFactory.create_database(
-        "dynamodb",
-        env=ENVIRONMENT,
-        table_prefix='majd'
-    )
+        "dynamodb", session_table_name=DynamoDB_session,
+        objects_table_name=DynamoDB_objects)
 else:
     raise ValueError(f"Unknown STORAGE_TYPE {storage_type!r}")
 YOLO_RESPONSE_TIME = Summary(
