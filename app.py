@@ -76,7 +76,7 @@ def run_model_prediction(original_path, predicted_path, uid):
 
     return detected_labels
 
-metrics_app = make_wsgi_app()
+metrics_app = make_asgi_app()
 app.mount("/metrics", WSGIMiddleware(metrics_app))
 def poll_sqs_messages():
     while True:
