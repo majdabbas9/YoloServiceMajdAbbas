@@ -298,12 +298,12 @@ class DynamoDBDatabaseHandler(BaseDatabaseHandler):
 # === Factory Method ===
 class DatabaseFactory:
     @staticmethod
-    def create_database(db_type, **kwargs) -> BaseDatabaseHandler:
+    def create_database(db_type,session_table_name,objects_table_name,**kwargs) -> BaseDatabaseHandler:
         if db_type == 'sqlite':
             return SQLiteDatabaseHandler(kwargs['db_path'])
         elif db_type == 'dynamodb':
             env = kwargs.get('env', 'dev')  # default to dev
             project_prefix = kwargs.get('table_prefix', 'majd_yolo')
-            return DynamoDBDatabaseHandler(env=env, project_prefix=project_prefix)
+            return DynamoDBDatabaseHandler(session_table_name,objects_table_name)
         else:
             raise ValueError("Unsupported db_type. Use 'sqlite' or 'dynamodb'.")
