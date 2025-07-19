@@ -111,7 +111,7 @@ def poll_sqs_messages():
                 }
 
                 try:
-                    polybot_response = requests.post(f'http://{Polybot_url}:8443/predictions', json=payload)
+                    polybot_response = requests.post(f'http://{Polybot_url}:8080/predictions', json=payload)
                     polybot_response.raise_for_status()
                 except Exception as post_err:
                     print(f"[Polybot Callback Error] {post_err}")
@@ -184,4 +184,4 @@ def health():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=5000)
